@@ -1,29 +1,68 @@
 --[[ Joystick Utility ]]--
 -- Joystick/gamepad test for love2D
-    --[[ v0.02 ]]--
--- TODO: Make the y coordinate move down like a terminal?
-
-local joysticks = love.joystick.getJoysticks()
-showbutton = nil
+    --[[ v0.03 ]]--
+-- slight mess now that needs to be tamed and improved
+local joysticks = {}
+--local joysticks = love.joystick.getJoysticks()
+local showbutton = {}
 showW = 100
---[[
-joy1 = joysticks[1]
-joy2 = joysticks[2]
-joy3 = joysticks[3]
-joy4 = joysticks[4]
-]]
 
 function love.load()
 	print("Joystick tester")
 	XRES = 1000
 	YRES = 700
     love.window.setMode(XRES, YRES)
-
+    -- Set up the initial joysticks
+    detectJoysticks()
 end
 
+function love.joystickadded(joystick)
+    -- A new joystick has been connected
+    table.insert(joysticks, joystick)
+    print("Joystick added:", joystick:getName())
+end
+
+function love.joystickremoved(joystick)
+    -- A joystick has been disconnected
+    for i, j in ipairs(joysticks) do
+        if j == joystick then
+            table.remove(joysticks, i)
+            print("Joystick removed:", joystick:getName())
+            break
+        end
+    end
+end
+
+function detectJoysticks()
+    -- Detect all connected joysticks at startup
+    local count = love.joystick.getJoystickCount()
+    for i = 1, count do
+        local joystick = love.joystick.getJoysticks()[i]
+        table.insert(joysticks, joystick)
+        print("Detected Joystick " .. i .. ": " .. joystick:getName())
+    end
+end
+
+function updateJoystickInput(joystick, dt)
+    -- Update input for a single joystick
+    -- Example: Get axis values
+    local xAxis = joystick:getAxis(1)
+    local yAxis = joystick:getAxis(2)
+    
+    -- Example: Check button presses
+    for i = 1, joystick:getButtonCount() do
+        if joystick:isDown(i) then
+            print("Button " .. i .. " pressed on " .. joystick:getName())
+        end
+    end
+    
+    -- Add more input handling as needed
+end
+--old!:
 function love.joystickpressed(joystick, button)
-	showbutton = button
-	print("button " .. showbutton)
+	showbutton[joystick] = button
+
+	print("button " .. showbutton[joystick])
 	id, instance = joystick:getID()
 	print("ID: " .. id .. " | InstanceID: " .. instance .. " | Joystick #" .. tostring(i) ..
 	"\nName: " .. joystick:getName()	.. "\nJoystick GUID: " .. joystick:getGUID() .. 
@@ -31,11 +70,30 @@ function love.joystickpressed(joystick, button)
 	"\nJoystick:getDeviceInfo: " .. joystick:getDeviceInfo())
 end
 
+
+--END!!
+
+
 function love.joystickreleased(joystick, button)
-	if showbutton == button then showbutton = nil end
+	showbutton[joystick] = nil
+	--showbutton = 
+end
+
+function love.update(dt)
+    -- Update joystick input for all connected joysticks
+    --for i, joystick in ipairs(joysticks) do
+    --    updateJoystickInput(joystick, dt)
+    --end
+
+
+end
+
+function love.joystickremoved( joystick )
+	print(joystick)
 end
 
 function love.draw()
+	joysticks = love.joystick.getJoysticks()
 	for i, joystick in pairs(joysticks) do
 		--love.graphics.print(joystick:getName() .. " - a gamepad? " .. tostring(joystick:isGamepad()) .. tostring(lastpressed), 10, (i-1) * 200)
 		joyID, joyInstance = joystick:getID() -- or "", ""
@@ -78,12 +136,12 @@ function love.draw()
 
 		--love.graphics.
 		--print(joystick:getGamepadMappingString() )--,10,10)
-		if showbutton then
+		if showbutton[joystick] then
 			love.graphics.setColor(1,0,0,1)
-			love.graphics.rectangle("fill", XRES - showW, YRES - showW, showW, showW)
+			love.graphics.rectangle("fill", (i-1) * showW, YRES - showW, showW, showW)
 			love.graphics.setColor(1,1,1,1)
-			love.graphics.print("button", XRES - showW, YRES - showW)
-			love.graphics.print(showbutton, XRES - (showW/2), YRES - (showW/2))
+			love.graphics.print("button", (i-1) * showW, YRES - showW)
+			love.graphics.print(showbutton[joystick], ((2*i)-1)*(showW/2), YRES - (showW/2))
 		end
 	end
 end
